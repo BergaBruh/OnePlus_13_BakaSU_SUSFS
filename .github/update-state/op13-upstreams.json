@@ -14,7 +14,15 @@
     "kernel": "6.6.118",
     "requested_firmware_version": "16.0.10.600",
     "source_fallback": true,
-    "source_checked_on": "2026-10-09"
+    "source_checked_on": "2026-10-09",
+    "requested_target": {
+      "firmware_family": "ColorOS",
+      "model": "CPH2653",
+      "firmware_version": "17.x (EU/GLO; exact OnePlusOSS source build pending)",
+      "userspace_android_version": "android17",
+      "source_status": "awaiting_official_oneplusoss_pair",
+      "source_checked_on": "2026-11-03"
+    }
   },
   "sources": {
     "kernel_common": {
