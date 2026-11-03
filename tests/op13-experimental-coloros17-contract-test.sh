@@ -60,11 +60,14 @@ if config.get("uname") != "OP13-COS17-FALLBACK-RESUKISU":
 if config.get("susfs") is not True or config.get("custom_patches") is not True:
     raise SystemExit("experimental build must preserve SUSFS and the OP13 patch feature set")
 
+if state.get("target", {}).get("kernel_driver_uapi_version") != 6:
+    raise SystemExit("COS17 test build must target BakaSU UAPI 6")
+
 sources = state.get("sources", {})
 expected_sources = {
     "kernel_common": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
     "kernel_modules": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
-    "resukisu": "8450dd287ef6ee25ca2b6b858b43c9354c73060c",
+    "resukisu": "516d3e87fbc986ccefdde2c2765f1700612441a9",
     "susfs": "937215cb3a1b1f333d764c366c7a49972fa8e7a0",
 }
 for key, sha in expected_sources.items():
@@ -98,6 +101,9 @@ required_direct_zip_contract = [
     'META-INF/com/google/android/updater-script',
     'tools/ak3-core.sh',
     'entries_file="$RUNNER_TEMP/cos17-ak3-zip-entries.txt"',
+    'KernelSU/uapi/supercall.h',
+    'KERNEL_SU_UAPI_VERSION',
+    'kernel_driver_uapi_version',
     'path: ${{ github.workspace }}/${{ steps.stage.outputs.staged_name }}',
     'path: ${{ steps.stage.outputs.notice }}',
 ]
