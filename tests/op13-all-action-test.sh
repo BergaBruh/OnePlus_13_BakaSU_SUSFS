@@ -197,6 +197,7 @@ for required, message in [
     ("Input 'ds_userns_mode' must be 'hardened' or 'compat'. Got: '$ds_userns_mode'", "Droidspaces USER_NS mode must reject unsupported policies"),
     ('custom_patches=false cannot be combined with opt=true or hmbird=true', "disabled custom patches must not leave opt or hmbird as false-positive flags"),
     ('^(OOS|COS)[0-9]+
+]:
     if required not in validate_body:
         raise SystemExit(message)
 module_overlay_assignment = validate_body.find('module_overlay="${OP_MODULE_OVERLAY:-false}"')
@@ -739,6 +740,7 @@ require(r"^\s{6}matrix:\s*$", "build job strategy must declare a matrix")
 require(r"^\s{8}include:\s*$", "matrix strategy must use an include list")
 require_text('^configs/(oos15|oos16|coloros17)/', "matrix config validation must allow ColorOS 17 paths")
 require_text('^manifests/(oos15|oos16|coloros17)/', "matrix manifest validation must allow ColorOS 17 paths")
+require_text('OS: ${{ matrix.os }}', "release metadata must use the generic matrix OS field")
 
 include_section = text[text.index("include:") :]
 row_blocks = re.findall(r"(?ms)^ {10}- slug:\s*[^\n]+.*?(?=^ {10}- slug:|\Z)", include_section)
