@@ -83,6 +83,10 @@ jobs:
           EXPECTED_SUSFS_SHA=c7f670f57b7d43d75066b6657f8aee9cdf580d96
           EXPECTED_KERNEL_COMMON_SHA=e1b346b6b4f4096eb342ae3684838a942fd6f6c4
           EXPECTED_KERNEL_MODULES_SHA=d50b305f7da9e14715a25120a4ac7b1a4b8b97c3
+          # KMI string reported by the stock ColorOS 17 CPH2653_11.H.05_3050
+          # boot partition, and the UTS_RELEASE this build actually produces.
+          EXPECTED_STOCK_KMI=6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k
+          EXPECTED_BUILT_UTS_RELEASE=6.6.118-android15
 
           [[ -f "$STATE_PATH" && -f "$CONFIG_PATH" && -f "$MANIFEST_PATH" ]] || {
             echo "::error::Missing experimental COS17 build input"
@@ -96,6 +100,8 @@ jobs:
             --arg susfs "$EXPECTED_SUSFS_SHA" \
             --arg common "$EXPECTED_KERNEL_COMMON_SHA" \
             --arg modules "$EXPECTED_KERNEL_MODULES_SHA" \
+            --arg stock_kmi "$EXPECTED_STOCK_KMI" \
+            --arg built_uts "$EXPECTED_BUILT_UTS_RELEASE" \
             '.validation.experimental == true
              and .validation.supported == false
              and .validation.publish_release == false
@@ -109,6 +115,8 @@ jobs:
              and .target.source_fallback == true
              and .target.kernel_kmi_android_generation == "android15"
              and .target.linux_kernel_version == "6.6.118"
+             and .target.kmi == $stock_kmi
+             and .target.built_kernel_uts_release == $built_uts
              and .target.kernel_driver_uapi_version == 6
              and .target.config == $config
              and .target.manifest == $manifest
@@ -134,6 +142,8 @@ jobs:
           printf 'config_json=%s\n' "$(jq -c . "$CONFIG_PATH")" >> "$GITHUB_OUTPUT"
           printf 'resukisu_sha=%s\n' "$EXPECTED_RESUKISU_SHA" >> "$GITHUB_OUTPUT"
           printf 'susfs_sha=%s\n' "$EXPECTED_SUSFS_SHA" >> "$GITHUB_OUTPUT"
+          printf 'stock_kmi=%s\n' "$EXPECTED_STOCK_KMI" >> "$GITHUB_OUTPUT"
+          printf 'built_uts=%s\n' "$EXPECTED_BUILT_UTS_RELEASE" >> "$GITHUB_OUTPUT"
 
       - name: Build experimental COS17 kernel
         id: build
@@ -191,6 +201,8 @@ jobs:
           KERNEL_VERSION: ${{ steps.build.outputs.kernel_version }}
           RESUKISU_SHA: ${{ steps.build.outputs.ksu_commit_sha }}
           SUSFS_SHA: ${{ steps.build.outputs.susfs_commit_sha }}
+          STOCK_KMI: ${{ steps.pins.outputs.stock_kmi }}
+          EXPECTED_BUILT_UTS_RELEASE: ${{ steps.pins.outputs.built_uts }}
         run: |
           set -euo pipefail
 
@@ -230,6 +242,29 @@ jobs:
             fi
           done
 
+          # Verify the kernel identity of the image that is actually shipped.
+          # A green build is not proof that the image carries the expected
+          # version string, so read it back out of the staged ZIP.
+          image_file="$RUNNER_TEMP/cos17-kernel-image"
+          unzip -p "$staged_zip" Image > "$image_file" || {
+            echo "::error::Could not extract Image from the staged ZIP"
+            exit 1
+          }
+          actual_image_sha256="$(sha256sum "$image_file" | awk '{print $1}')"
+          [[ "$actual_image_sha256" == "$IMAGE_SHA256" ]] || {
+            echo "::error::Image SHA-256 in the staged ZIP does not match the build output"
+            exit 1
+          }
+          built_vermagic="$(grep -a -o -m 1 -E '[0-9]+\.[0-9]+\.[0-9]+-android15[^[:space:]]* SMP preempt mod_unload modversions aarch64' "$image_file" || true)"
+          expected_vermagic="$EXPECTED_BUILT_UTS_RELEASE SMP preempt mod_unload modversions aarch64"
+          [[ "$built_vermagic" == "$expected_vermagic" ]] || {
+            echo "::error::Built kernel vermagic is '$built_vermagic', expected '$expected_vermagic'"
+            exit 1
+          }
+          built_banner="$(grep -a -o -m 1 -E 'Linux version [^[:space:]]+ \([^)]*\)' "$image_file" || true)"
+          echo "Built kernel vermagic: $built_vermagic"
+          echo "Built kernel banner  : $built_banner"
+
           notice="$GITHUB_WORKSPACE/EXPERIMENTAL-COS17-SOURCE-FALLBACK-NOTICE.txt"
           cat > "$notice" <<EOF
           EXPERIMENTAL / UNVERIFIED COLOROS 17 SOURCE-FALLBACK BUILD
@@ -237,9 +272,12 @@ jobs:
 
           Device target: OnePlus 13 Global CPH2653
           Userspace target label: ColorOS 17 / Android 17
+          Firmware analysed: CPH2653_11.H.05_3050 (V17.0.0, Android 17)
           Kernel source origin: OxygenOS 16.0.9.401(EX01)
           Kernel baseline: android15 / Linux 6.6.118
-          KMI: 6.6.118-android15-8-g2e6b9c3812c5-ab15114928-4k
+          Stock ColorOS 17 kernel: $STOCK_KMI
+          Built kernel UTS_RELEASE: $built_vermagic
+          Built kernel banner: $built_banner
           Common source: e1b346b6b4f4096eb342ae3684838a942fd6f6c4
           Modules source: d50b305f7da9e14715a25120a4ac7b1a4b8b97c3
           ReSukiSU/BakaSU: $RESUKISU_SHA
@@ -252,6 +290,12 @@ jobs:
           This is NOT built from official CPH2653 ColorOS 17 kernel sources.
           It is only a compatibility test using the last published matching
           CPH2653 OxygenOS source baseline. Keep a recovery path available.
+
+          The exported symbol CRCs of this build were verified to be identical
+          to the stock ColorOS 17 kernel for every symbol the stock
+          vendor_dlkm modules import. The kernel version string differs from
+          the stock one, but AOSP ignores the version part of vermagic for
+          modules that carry a CRC table, so the stock vendor modules load.
           EOF
 
           printf 'staged_name=%s\n' "$staged_name" >> "$GITHUB_OUTPUT"

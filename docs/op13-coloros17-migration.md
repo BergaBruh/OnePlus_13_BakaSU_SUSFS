@@ -201,3 +201,64 @@ source**: `c4127a25dcf3` cannot be rebuilt, so the fallback remains a
 compatibility experiment rather than a ColorOS 17 release, and it must not be
 relabelled as one.
 
+### Compatibility matrix
+
+| Aspect | Stock ColorOS 17 | Source-fallback build | Verdict |
+| --- | --- | --- | --- |
+| Firmware | `CPH2653_11.H.05_3050`, V17.0.0, Android 17, SP 2026-10-01 | — | — |
+| Linux version | 6.6.118 | 6.6.118 | match |
+| KMI generation | `android15-8` | `android15-8` | match |
+| `UTS_RELEASE` | `6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k` | `6.6.118-android15` | differs, but **not enforced** for modules that carry a CRC table |
+| vermagic flags | `SMP preempt mod_unload modversions aarch64` | identical | must match, does |
+| Exported symbol CRCs | reference | identical for every kernel export the shipped vendor modules import (2685 symbols, 0 mismatches) | match |
+| Non-kernel symbols | 1656 vendor-module exports and tracepoints | absent from both kernels | not a kernel ABI concern |
+| Kernel source commit | `c4127a25dcf3`, **unpublished** | `e1b346b6` (OxygenOS 16.0.0), published | fallback is not the official COS17 source |
+| Toolchain | AOSP clang 18.0.0 (`r510928`), `kleaf@build-host` | ZyC clang 19.0.0git | build-only difference |
+| Kernel build date | 2026-07-15 | 2026-11 | — |
+| Root / SUSFS | none | BakaSU UAPI 6 built in, SUSFS v2.3.0 | added by the build |
+| `init_boot` | stock, 2 883 774 B generic ramdisk | untouched | lowest-risk surface |
+| AVB | `vbmeta` / `vbmeta_system` / `vbmeta_vendor` signed | replacing `boot` invalidates the `boot` hash | requires an unlocked bootloader or a patched `vbmeta` |
+
+### Why the previously supplied `kernelsu.ko` cannot load
+
+The patched `init_boot` shipped by the user carries a `kernelsu.ko` with
+vermagic `6.6.127-4k-g46a034eca005-dirty`, while the running ColorOS 17 kernel
+reports `6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k`.
+
+- If the module has **no** `__versions` section, `load_info.index.vers` is 0,
+  `same_magic()` compares the **full** vermagic, and the load fails
+  immediately with `version magic '...' should be '...'`.
+- If it **does** carry a `__versions` section, the version string is skipped
+  but every imported symbol CRC is checked against the running kernel. A module
+  built from a 6.6.127 tree does not match the 6.6.118 kernel, so the load
+  fails with `disagrees about version of symbol`.
+
+Both branches fail, so the LKM in the supplied `init_boot` cannot load on the
+stock ColorOS 17 kernel, and re-flashing that `init_boot` will not produce a
+working root.
+
+### Decision
+
+**Variant B — the source-fallback GKI build — is the supported path.**
+
+- It is the only variant this repository can build end to end today.
+- The ABI evidence above shows the fallback kernel is compatible with the
+  stock ColorOS 17 vendor modules.
+- It keeps the stock `init_boot`, `vendor_boot`, `dtbo` and `vbmeta` partitions
+  untouched, so the blast radius is limited to `boot`.
+
+**Variant A — BakaSU in LKM mode on the stock kernel — is architecturally
+better but is not implementable with the inputs available.**
+
+- It needs a `kernelsu.ko` built with `CONFIG_MODVERSIONS=y` against a tree
+  whose exported symbol CRCs equal the stock kernel's. The OxygenOS 16 tree
+  qualifies (identical CRCs), so such a module is buildable.
+- It additionally needs BakaSU's LKM packaging (`ksuinit` injection into the
+  stock `init_boot`), which this repository does not implement yet.
+- Until that exists, the stock `init_boot` route has no working artefact.
+
+Recommendation: ship the Variant B build as an explicitly experimental
+compatibility test, require an unlocked bootloader or a patched `vbmeta`, and
+keep the stock `init_boot` so a rollback only needs the original `boot.img`.
+
+

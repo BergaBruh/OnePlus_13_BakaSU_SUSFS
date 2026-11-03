@@ -63,6 +63,12 @@ if config.get("susfs") is not True or config.get("custom_patches") is not True:
 if state.get("target", {}).get("kernel_driver_uapi_version") != 6:
     raise SystemExit("COS17 test build must target BakaSU UAPI 6")
 
+if state.get("target", {}).get("kmi") != "6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k":
+    raise SystemExit("COS17 state must record the stock ColorOS 17 kernel KMI")
+
+if state.get("target", {}).get("built_kernel_uts_release") != "6.6.118-android15":
+    raise SystemExit("COS17 state must record the UTS_RELEASE this build actually produces")
+
 sources = state.get("sources", {})
 expected_sources = {
     "kernel_common": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
