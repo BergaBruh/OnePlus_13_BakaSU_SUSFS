@@ -114,7 +114,10 @@ repo_root = Path(sys.argv[3])
 
 for relative_path in sys.argv[4:]:
     caller_path = repo_root / relative_path
-    if caller_path == workflow_path or relative_path == ".github/workflows/build-op13-experimental-resukisu-susfs.yml":
+    if caller_path == workflow_path or relative_path in (
+        ".github/workflows/build-op13-experimental-resukisu-susfs.yml",
+        ".github/workflows/build-op13-experimental-coloros17.yml",
+    ):
         continue
     caller_text = caller_path.read_text(encoding="utf-8")
     if re.search(r"(?m)^\s*upload_final_zip:\s*false\s*$", caller_text):

@@ -1,0 +1,16 @@
+# Keep the repository LF-only.
+#
+# The CI runners and the shell test suite execute these files directly.
+# A stray CRLF in a shell script breaks it at runtime ("set: pipefail\r:
+# invalid option name"), and a CRLF blob in .github/workflows/ is not a
+# valid YAML document for some parsers.  Normalising the working tree to
+# LF keeps local runs and CI byte-identical.
+* text=auto eol=lf
+
+# Binary payloads must never be line-ending converted.
+*.ko binary
+*.img binary
+*.zip binary
+*.gz binary
+*.xz binary
+*.bz2 binary
