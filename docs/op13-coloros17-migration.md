@@ -296,4 +296,37 @@ Recommendation: ship the Variant B build as an explicitly experimental
 compatibility test, require an unlocked bootloader or a patched `vbmeta`, and
 keep the stock `init_boot` so a rollback only needs the original `boot.img`.
 
+### Flashing procedure and recovery
+
+The AnyKernel3 package flashes the **`boot`** partition only (`block=boot` in
+`packaging/anykernel.sh`). It does **not** touch `init_boot`.
+
+That matters because the device currently carries a patched `init_boot` in
+which `ksuinit` replaces `/init` and loads a `kernelsu.ko` built for
+6.6.127. Flashing the fallback kernel without restoring the stock
+`init_boot` leaves that LKM in place next to a built-in BakaSU, and the
+`kernelsu.ko` load fails, so the boot outcome depends on how `ksuinit`
+handles the failure.
+
+Required order:
+
+1. flash the **stock `init_boot.img`** extracted from the
+   `CPH2653_11.H.05_3050` OTA
+   (sha256 `10241baad4a0d535d13ec7e9e81601a32a1e49a4fb9b15b2f3fb80e257361f8f`);
+2. flash the experimental AnyKernel3 ZIP, which replaces `boot` only;
+3. do not flash `vendor_boot`, `dtbo`, `vbmeta*` or any vendor partition.
+
+Recovery needs only the stock `boot.img`
+(sha256 `b83602958c464a6a344589cd41b1fceec49f8e1d2513e215afcd003f93493bd4`)
+and the stock `init_boot.img` above; both are extracted from the same OTA, so
+they are guaranteed to be a consistent pair.
+
+Flashing a self-built `boot` invalidates the AVB hash of that partition, so
+the device must have an unlocked bootloader or a patched `vbmeta`
+(sha256 of the stock `vbmeta.img`:
+`942d90f09e3a75dcc69ecad73cc5fcb115e30f55ec674c750dcc0bd564170e96`).
+`patch_vbmeta_flag=auto` in `packaging/anykernel.sh` lets AnyKernel3 patch
+`vbmeta` when the recovery environment allows it.
+
+
 
