@@ -51,6 +51,7 @@ Run the repository checks with:
 
 ```bash
 bash tests/op13-all-action-test.sh
+bash tests/op13-coloros17-prep-test.sh
 bash tests/op13-baseline-build-test.sh
 bash tests/release-workflow-contract-test.sh
 bash tests/op13-experimental-resukisu-susfs-contract-test.sh
