@@ -8,3 +8,4 @@ opencode.json
 .github/opencode/conflict_summary.txt
 ota/
 ota/*
+.opencode/
