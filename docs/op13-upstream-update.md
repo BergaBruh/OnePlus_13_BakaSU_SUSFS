@@ -84,3 +84,27 @@ and timeouts. Invalid gzip/HTML responses and incomplete source archives fail
 and are removed. No branch tip or different SUSFS revision is substituted.
 The download tests cover Git success, archive fallback, invalid responses,
 transport failure, SHA mismatch, and mutable-ref rejection using local fixtures.
+
+## Release publication requires write workflow permissions
+
+The aggregate release step in `build-op13-all.yml` publishes the six matrix
+ZIPs with `gh release create` and the workflow's own `GITHUB_TOKEN`, which
+needs `contents: write`. The workflow declares that permission, but the token
+is still capped by the repository setting **Settings -> Actions -> General ->
+Workflow permissions -> Read and write permissions**.
+
+While that setting was *Read repository contents and packages permissions*,
+the publish step failed with:
+
+```
+HTTP 403: Resource not accessible by integration
+(https://api.github.com/repos/<owner>/<repo>/releases)
+```
+
+The six kernel builds still succeed; only the aggregate release step fails, so
+the symptom is a red `Build all supported OP13 variants` run with six green
+matrix jobs and a red `Publish all supported OP13 variants` job.
+
+The setting was raised to *Read and write permissions* on 2026-11-03 and the
+publish step succeeded again. Check this setting first when release
+publication fails with HTTP 403 and every matrix job is green.
