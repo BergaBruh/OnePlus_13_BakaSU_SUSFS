@@ -35,14 +35,30 @@ for allowed in ("configs/(oos15|oos16|coloros17)", "manifests/(oos15|oos16|color
 if 'expected_susfs_ref="gki-$kmi_android-$linux_kernel_mm"' not in workflow:
     raise SystemExit("SUSFS branch must be derived from actual KMI/kernel state")
 
-# This guard is intentionally removed/updated when matching official CPH2653
-# ColorOS 17 source SHAs are published and reviewed.
-if list((root / "configs/coloros17").glob("*.json")) if (root / "configs/coloros17").exists() else []:
-    raise SystemExit("do not add a buildable ColorOS 17 config before official matching source SHAs exist")
-if list((root / "manifests/coloros17").glob("*.xml")) if (root / "manifests/coloros17").exists() else []:
-    raise SystemExit("do not add a ColorOS 17 manifest before official matching source SHAs exist")
-if "slug: coloros17-" in workflow or "slug: cos17-" in workflow:
-    raise SystemExit("do not publish a ColorOS 17 release row before official matching sources exist")
+# Until matching official CPH2653 ColorOS 17 source SHAs are published,
+# permit only the explicitly experimental source-fallback target.
+allowed_configs = {"OP13-GLOBAL-EXPERIMENTAL-6.6.118.json"}
+allowed_manifests = {"oneplus_13_global_cos17_source_fallback_6.6.118.xml"}
+actual_configs = {p.name for p in (root / "configs/coloros17").glob("*.json")} if (root / "configs/coloros17").exists() else set()
+actual_manifests = {p.name for p in (root / "manifests/coloros17").glob("*.xml")} if (root / "manifests/coloros17").exists() else set()
 
-print("PASS: OP13 ColorOS 17 preparation remains source-gated")
+if actual_configs != allowed_configs:
+    raise SystemExit(f"only the approved experimental ColorOS 17 config is allowed before official sources exist: {actual_configs}")
+if actual_manifests != allowed_manifests:
+    raise SystemExit(f"only the approved experimental ColorOS 17 manifest is allowed before official sources exist: {actual_manifests}")
+if "slug: coloros17-" in workflow or "slug: cos17-" in workflow:
+    raise SystemExit("do not publish a ColorOS 17 row in the normal release matrix before official matching sources exist")
+
+experimental_state = root / ".github/update-state/op13-experimental-coloros17-source-fallback.json"
+if not experimental_state.is_file():
+    raise SystemExit("experimental ColorOS 17 source-fallback state file is required")
+experimental = json.loads(experimental_state.read_text())
+if experimental.get("validation", {}).get("experimental") is not True:
+    raise SystemExit("ColorOS 17 fallback must remain explicitly experimental")
+if experimental.get("validation", {}).get("publish_release") is not False:
+    raise SystemExit("ColorOS 17 fallback must not publish a normal release")
+if experimental.get("target", {}).get("source_fallback") is not True:
+    raise SystemExit("ColorOS 17 fallback must identify the OxygenOS source fallback")
+
+print("PASS: OP13 ColorOS 17 preparation remains source-gated with explicit experimental fallback")
 PY
