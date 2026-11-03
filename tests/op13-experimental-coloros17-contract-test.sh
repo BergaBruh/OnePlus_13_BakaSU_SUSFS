@@ -68,7 +68,7 @@ expected_sources = {
     "kernel_common": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
     "kernel_modules": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
     "resukisu": "516d3e87fbc986ccefdde2c2765f1700612441a9",
-    "susfs": "937215cb3a1b1f333d764c366c7a49972fa8e7a0",
+    "susfs": "c7f670f57b7d43d75066b6657f8aee9cdf580d96",
 }
 for key, sha in expected_sources.items():
     if sources.get(key, {}).get("sha") != sha:

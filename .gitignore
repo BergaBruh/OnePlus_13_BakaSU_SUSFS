@@ -6,3 +6,5 @@ opencode.json
 .op13-baseline/
 .github/opencode/conflict_files.txt
 .github/opencode/conflict_summary.txt
+ota/
+ota/*

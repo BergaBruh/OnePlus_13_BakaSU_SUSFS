@@ -6,6 +6,7 @@ workflow="$repo_root/.github/workflows/build-op13-all.yml"
 build_action="$repo_root/.github/actions/build-kernel/action.yml"
 
 expected_manifests=(
+  "manifests/coloros17/oneplus_13_global_cos17_source_fallback_6.6.118.xml"
   "manifests/oos15/oneplus_13_6.6.30_v.xml"
   "manifests/oos15/oneplus_13_global_6.6.56_v.xml"
   "manifests/oos15/oneplus_13_global_v.xml"
@@ -22,6 +23,7 @@ expected_manifests=(
   "manifests/oos16/oneplus_turbo_6x_w.xml"
 )
 expected_configs=(
+  "configs/coloros17/OP13-GLOBAL-EXPERIMENTAL-6.6.118.json"
   "configs/oos15/OP13-6.6.30.json"
   "configs/oos15/OP13-CPH-6.6.56.json"
   "configs/oos15/OP13-CPH.json"
@@ -40,7 +42,7 @@ mapfile -t actual_manifests < <(git -C "$repo_root" ls-files 'manifests/**/*.xml
 expected_manifest_list=$(printf '%s\n' "${expected_manifests[@]}")
 actual_manifest_list=$(printf '%s\n' "${actual_manifests[@]}")
 [[ "$actual_manifest_list" == "$expected_manifest_list" ]] ||
-  fail "tracked manifest inventory must be exactly the approved fourteen files"
+  fail "tracked manifest inventory must be exactly the approved fifteen files"
 
 mapfile -t actual_op13_configs < <(
   git -C "$repo_root" ls-files 'configs/oos15/*.json' 'configs/oos16/*.json' 'configs/coloros17/*.json' |
@@ -49,7 +51,7 @@ mapfile -t actual_op13_configs < <(
 expected_config_list=$(printf '%s\n' "${expected_configs[@]}")
 actual_op13_config_list=$(printf '%s\n' "${actual_op13_configs[@]}")
 [[ "$actual_op13_config_list" == "$expected_config_list" ]] ||
-  fail "tracked base OP13 config inventory must be exactly the approved seven files"
+  fail "tracked base OP13 config inventory must be exactly the approved eight files"
 
 python3 - "$repo_root" "${expected_configs[@]}" <<'PY'
 import json

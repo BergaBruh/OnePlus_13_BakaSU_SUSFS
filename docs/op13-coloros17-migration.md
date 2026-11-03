@@ -86,3 +86,118 @@ When the official source pair appears:
 If any source pair is incomplete or requires unsafe manual patch conflict
 resolution, keep the last known-good OxygenOS target active and report the
 blocker instead of publishing a release.
+
+## ColorOS 17 OTA analysis (CPH2653_11.H.05_3050)
+
+Analyzed on **2026-11-03** from the full OTA `eca6af30e9254d609388ec807e51f22b`.
+
+### Firmware identity
+
+| Property | Value |
+| --- | --- |
+| Target version | `CPH2653_11.H.05_3050_202610210134` |
+| ROM version | `V17.0.0` |
+| Android version | 17 |
+| Security patch | 2026-10-01 |
+| `mainline_version` | 371559000 |
+| OTA type | full (single `payload.bin`, 8.6 GB, 54 partitions, no delta ops) |
+
+All delta operations are absent: every partition uses `REPLACE`,
+`REPLACE_BZ`, `REPLACE_XZ` or `ZERO`, so the payload is self-sufficient and no
+base images are required.
+
+### Stock kernel identity
+
+The `boot` partition is an Android boot image v4 (page size 4096) carrying the
+GKI `Image`:
+
+```
+Linux version 6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k (kleaf@build-host)
+(Android (11368308, +pgo, +bolt, +lto, +mlgo, based on r510928) clang version 18.0.0)
+#1 SMP PREEMPT Wed Jul 15 13:58:53 UTC 2026
+```
+
+| Property | Value |
+| --- | --- |
+| Linux | 6.6.118 |
+| KMI generation | `android15-8` |
+| `UTS_RELEASE` | `6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k` |
+| `vermagic` | `6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k SMP preempt mod_unload modversions aarch64` |
+| Build source commit | `c4127a25dcf3` (**not published**) |
+
+The commit `c4127a25dcf3` is absent from `aosp-mirror/kernel_common` and from
+`OnePlusOSS/android_kernel_common_oneplus_sm8750`, whose only SM8750 branches
+are OxygenOS 15/16. **OnePlus has not published the ColorOS 17 kernel source.**
+
+### vermagic is not enforced by version string on GKI
+
+AOSP's `kernel/module/version.c` in the OnePlus 6.6.118 tree implements:
+
+```c
+/* First part is kernel version, which we ignore if module has crcs. */
+int same_magic(const char *amagic, const char *bmagic, bool has_crcs)
+{
+	if (has_crcs) {
+		amagic += strcspn(amagic, " ");
+		bmagic += strcspn(bmagic, " ");
+	}
+	return strcmp(amagic, bmagic) == 0;
+}
+```
+
+For modules that carry a CRC table only the flag part
+(`SMP preempt mod_unload modversions aarch64`) is compared; the version string
+is skipped. This is confirmed by the shipped firmware itself: the 464 modules in
+`vendor_dlkm` carry two *different* vermagics,
+`6.6.118-android15-8-o-4k` (253 modules) and
+`6.6.118-android15-8-o-g1524d9b076be-4k` (211 modules), and neither equals the
+running kernel's `6.6.118-android15-8-gc4127a25dcf3-ab15863337-4k`.
+
+**Consequence:** a mismatching vermagic version string is *not* the reason a
+module fails to load on this device. The gate is the per-symbol CRC check.
+
+### Symbol CRC compatibility with the fallback kernel
+
+The exported-symbol CRC table (`__kcrctab`) was extracted from the stock
+ColorOS 17 `Image` and from the OOS16 source-fallback `Image`, and compared
+against the 4341 distinct `(symbol, CRC)` pairs imported by the shipped
+`vendor_dlkm` modules:
+
+| Result | Count |
+| --- | --- |
+| CRC identical in stock and fallback kernel | 2685 |
+| CRC present in stock but different in fallback | **0** |
+| CRC not exported by the kernel (vendor-module exports, tracepoints) | 1656 |
+
+The fallback kernel therefore exports the same CRCs as the stock ColorOS 17
+kernel for every symbol the vendor modules need. The `android15-8` KMI
+generation holds across the two builds.
+
+### BakaSU/SUSFS pairing constraint
+
+BakaSU and SUSFS implement `selinux_hide` in mutually exclusive ways:
+
+| BakaSU | Expected SUSFS |
+| --- | --- |
+| `8450dd287ef6ee25ca2b6b858b43c9354c73060c` (UAPI 5) — declares the SELinux helpers as `extern` (`__maybe_static`) | `937215cb3a1b1f333d764c366c7a49972fa8e7a0` — renames the in-kernel helpers to the global `*_with_policy` variants |
+| `516d3e87fbc986ccefdde2c2765f1700612441a9` (UAPI 6) — implements `selinux_hide` itself and keeps the helpers file-local | `c7f670f57b7d43d75066b6657f8aee9cdf580d96` — leaves the in-kernel helpers untouched and expects `ksu_selinux_hide_running` / `ksu_selinux_hide_enabled` from BakaSU |
+
+Mixing the two directions fails at link time with
+`undefined symbol: security_context_to_sid_with_policy`, because
+`security/selinux/hooks.c` and `security/selinux/selinuxfs.c` call a global
+symbol that BakaSU defines as `static`.
+
+The ColorOS 17 experimental build therefore pins BakaSU UAPI 6 together with
+SUSFS `c7f670f`. The OxygenOS builds keep the older, validated pairing. The
+build action now fails fast with an explicit error when the pairing is wrong.
+
+### Resulting decision
+
+The ColorOS 17 OTA is **not** blocked on kernel ABI. Linux 6.6.118 and the
+`android15-8` KMI generation are identical to the fallback baseline, and the
+symbol CRCs match, so a fallback kernel can load the stock ColorOS 17
+`vendor_dlkm` modules. The remaining blocker is the **unpublished kernel
+source**: `c4127a25dcf3` cannot be rebuilt, so the fallback remains a
+compatibility experiment rather than a ColorOS 17 release, and it must not be
+relabelled as one.
+

@@ -1221,7 +1221,7 @@ runs:
           fi
           
           if grep -qF 'if (vma->vm_end > last_vma_end)' ./fs/proc/task_mmu.c && ! grep -qxF 'SUSFS_IS_INODE_SUS_MAP' ./fs/proc/task_mmu.c; then
-            echo "Temporarily expand the `last_vma_end` `if` block to fix a matching issue."
+            echo "Temporarily expand the last_vma_end if-block to fix a matching issue."
             perl -i -0pe 's/\t\t\tif \(vma->vm_end > last_vma_end\)\n\t\t\t\tsmap_gather_stats\(vma, &mss, last_vma_end\);/\t\t\tif (vma->vm_end > last_vma_end) {\n\t\t\t\tsmap_gather_stats(vma, \&mss, last_vma_end);\n\t\t\t\tlast_vma_end = vma->vm_end;\n\t\t\t}/' ./fs/proc/task_mmu.c
             fake_patched_expand=1
           fi
@@ -1361,6 +1361,30 @@ runs:
           fi
         fi
         echo "✅ SUSFS patches applied"
+
+        # Guard against the BakaSU/SUSFS selinux_hide pairing conflict.
+        #
+        # BakaSU <= 8450dd28 declares the SELinux helpers as extern
+        # (__maybe_static) and relies on SUSFS to rename the in-kernel helpers
+        # to the global "*_with_policy" variants.  BakaSU >= 516d3e87
+        # implements selinux_hide itself and expects the in-kernel helpers NOT
+        # to be renamed.  Mixing the two leaves security/selinux/hooks.c
+        # calling a global "security_context_to_sid_with_policy" that nobody
+        # defines, which only surfaces much later as an ld.lld
+        # "undefined symbol" error.
+        selinux_hide_src="$KSU_FOLDER/kernel/feature/selinux_hide.c"
+        if [ -f "$selinux_hide_src" ]; then
+          if grep -qE '^[[:space:]]*static[[:space:]]+int[[:space:]]+security_context_to_sid_with_policy' "$selinux_hide_src"; then
+            for selinux_file in \
+              "$COMMON_KERNEL_FOLDER/security/selinux/hooks.c" \
+              "$COMMON_KERNEL_FOLDER/security/selinux/selinuxfs.c"; do
+              if [ -f "$selinux_file" ] && grep -qE 'security_context_to_sid_with_policy[[:space:]]*\(' "$selinux_file"; then
+                echo "::error::BakaSU/SUSFS selinux_hide pairing conflict: $selinux_file calls the global security_context_to_sid_with_policy() while BakaSU defines it file-local. Pin a SUSFS revision that matches the BakaSU commit (BakaSU >= 516d3e87 requires SUSFS >= c7f670f57b7d43d75066b6657f8aee9cdf580d96)."
+                exit 1
+              fi
+            done
+          fi
+        fi
 
         echo "Add SUSFS Configuration Settings"
         cat >> "$COMMON_KERNEL_FOLDER/arch/arm64/configs/gki_defconfig" <<EOF
