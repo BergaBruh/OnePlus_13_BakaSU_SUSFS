@@ -9,6 +9,8 @@ on:
       - configs/coloros17/OP13-GLOBAL-EXPERIMENTAL-6.6.118.json
       - manifests/coloros17/oneplus_13_global_cos17_source_fallback_6.6.118.xml
       - tests/op13-experimental-coloros17-contract-test.sh
+      - .github/actions/build-kernel/**
+      - .github/actions/kernel-source-sync/**
       - .github/workflows/build-op13-experimental-coloros17.yml
 
 permissions:
