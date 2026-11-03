@@ -27,18 +27,30 @@ Flashing this kernel will not void your warranty, but there is always a risk of 
 
 </div>
 
-## OnePlus 13: current source target
+## OnePlus 13: current and next source targets
 
-The requested OxygenOS **16.0.10.600** sources are not published in OnePlusOSS
-as checked on 2026-10-09. The Global build therefore uses the latest published
-**16.0.9.401(EX01)** sources with **6.6.118 / android15 KMI**.
+**Active release baseline:** the latest matching official OnePlusOSS pair for
+OnePlus 13 Global/CPH2653 remains **OxygenOS 16.0.9.401(EX01)** with
+**Linux 6.6.118 / android15 KMI**. The newer OxygenOS 16.0.10.600 firmware did
+not receive a matching public source publication when last checked.
 
-ReSukiSU now lives at **Baka-SU/BakaSU**. OP13 builds pin its current main
-revision `8450dd287ef6ee25ca2b6b858b43c9354c73060c` and **SUSFS v2.3.0**
+**Next target:** **ColorOS 17 / Android 17 for CPH2653 EU/GLO**. Firmware
+availability does not by itself prove that matching kernel sources have been
+published. As checked on **2026-11-03**, the OnePlusOSS SM8750 common-kernel and
+modules/device-tree repositories do not expose a matching CPH2653 17.x source
+pair, so no ColorOS 17 release ZIP is published from an OxygenOS source fallback.
+
+The build pipeline is prepared to accept `COS17`, `configs/coloros17` and
+`manifests/coloros17`. SUSFS branch selection is derived from the actual
+kernel KMI generation and Linux major/minor version rather than from the
+userspace Android version. Activation remains gated on matching official source
+SHAs. See the [ColorOS 17 migration notes](docs/op13-coloros17-migration.md).
+
+ReSukiSU now lives at **Baka-SU/BakaSU**. The last validated release baseline
+pins BakaSU `8450dd287ef6ee25ca2b6b858b43c9354c73060c` and **SUSFS v2.3.0**
 `937215cb3a1b1f333d764c366c7a49972fa8e7a0` from `gki-android15-6.6`.
-All six kernel builds passed in [run 37908077540](https://github.com/BergaBruh/OnePlus_13_ReSukiSU_SUSFS/actions/runs/37908077540).
-Device validation remains pending; compatibility with 16.0.10.600 is unverified. See the
-[update notes and validation workflow](docs/op13-upstream-update.md).
+All six baseline kernel builds passed in
+[run 37908077540](https://github.com/BergaBruh/OnePlus_13_ReSukiSU_SUSFS/actions/runs/37908077540).
 
 If the SUSFS module displays **Unsupported Kernel** or **SUS PATH UNDEFINED**,
 follow the [helper diagnosis and repair instructions](docs/susfs-unsupported-kernel.md).
