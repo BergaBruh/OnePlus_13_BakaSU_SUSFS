@@ -43,7 +43,7 @@ actual_manifest_list=$(printf '%s\n' "${actual_manifests[@]}")
   fail "tracked manifest inventory must be exactly the approved fourteen files"
 
 mapfile -t actual_op13_configs < <(
-  git -C "$repo_root" ls-files 'configs/oos15/*.json' 'configs/oos16/*.json' |
+  git -C "$repo_root" ls-files 'configs/oos15/*.json' 'configs/oos16/*.json' 'configs/coloros17/*.json' |
     awk -F/ '$3 ~ /^OP13(-.*)?\.json$/ { print }' | sort
 )
 expected_config_list=$(printf '%s\n' "${expected_configs[@]}")
@@ -863,7 +863,7 @@ for required, message in [
     ("find release-dist -type f -name '*.zip'", "publish must enumerate ZIP files"),
     ('[[ "${#metadata_files[@]}" -eq 6 ]]', "publish must require exactly six metadata files"),
     ('[[ "${#zip_files[@]}" -eq 6 ]]', "publish must require exactly six ZIP files"),
-    ('keys == ["compatibility", "config", "kernel_kmi", "manifest", "oos", "resukisu", "sha256", "slug", "susfs", "zip"]', "publish must require the exact metadata schema"),
+    ('keys == ["compatibility", "config", "kernel_kmi", "manifest", "os", "resukisu", "sha256", "slug", "susfs", "zip"]', "publish must require the exact metadata schema"),
     ('all(.[]; type == "string" and length > 0)', "publish must require every metadata field to be a non-empty string"),
     ('declare -A seen_zip=()', "publish must track unique ZIP basenames"),
     ('[[ -z "${seen_zip[$zip]+x}" ]]', "publish must reject duplicate ZIP basenames"),
@@ -887,7 +887,7 @@ for slug, expected in mapping_expectations.items():
         raise SystemExit(f"publish validation is missing the exact mapping branch for {slug}")
     mapping_body = mapping.group("body")
     actual = []
-    for field in ("config", "manifest", "compatibility", "oos"):
+    for field in ("config", "manifest", "compatibility", "os"):
         value = re.search(rf"(?m)^                expected_{field}=(?:'([^']*)'|([^\n]+))$", mapping_body)
         actual.append((value.group(1) if value and value.group(1) is not None else value.group(2).strip()) if value else None)
     if tuple(actual) != expected:
@@ -1639,7 +1639,7 @@ for required, message in [
     ("find release-dist -type f -name '*.zip'", "publish must enumerate ZIP files"),
     ('[[ "${#metadata_files[@]}" -eq 6 ]]', "publish must require exactly six metadata files"),
     ('[[ "${#zip_files[@]}" -eq 6 ]]', "publish must require exactly six ZIP files"),
-    ('keys == ["compatibility", "config", "kernel_kmi", "manifest", "oos", "resukisu", "sha256", "slug", "susfs", "zip"]', "publish must require the exact metadata schema"),
+    ('keys == ["compatibility", "config", "kernel_kmi", "manifest", "os", "resukisu", "sha256", "slug", "susfs", "zip"]', "publish must require the exact metadata schema"),
     ('all(.[]; type == "string" and length > 0)', "publish must require every metadata field to be a non-empty string"),
     ('declare -A seen_zip=()', "publish must track unique ZIP basenames"),
     ('[[ -z "${seen_zip[$zip]+x}" ]]', "publish must reject duplicate ZIP basenames"),
@@ -1663,7 +1663,7 @@ for slug, expected in mapping_expectations.items():
         raise SystemExit(f"publish validation is missing the exact mapping branch for {slug}")
     mapping_body = mapping.group("body")
     actual = []
-    for field in ("config", "manifest", "compatibility", "oos"):
+    for field in ("config", "manifest", "compatibility", "os"):
         value = re.search(rf"(?m)^                expected_{field}=(?:'([^']*)'|([^\n]+))$", mapping_body)
         actual.append((value.group(1) if value and value.group(1) is not None else value.group(2).strip()) if value else None)
     if tuple(actual) != expected:
