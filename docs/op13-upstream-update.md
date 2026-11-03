@@ -85,26 +85,36 @@ and are removed. No branch tip or different SUSFS revision is substituted.
 The download tests cover Git success, archive fallback, invalid responses,
 transport failure, SHA mismatch, and mutable-ref rejection using local fixtures.
 
-## Release publication requires write workflow permissions
+## Release publication needs write workflow permissions
 
 The aggregate release step in `build-op13-all.yml` publishes the six matrix
 ZIPs with `gh release create` and the workflow's own `GITHUB_TOKEN`, which
-needs `contents: write`. The workflow declares that permission, but the token
-is still capped by the repository setting **Settings -> Actions -> General ->
-Workflow permissions -> Read and write permissions**.
+needs `contents: write`. The workflow declares that permission, and the
+repository's **Settings -> Actions -> General -> Workflow permissions** was
+raised from *Read repository contents and packages permissions* to *Read and
+write permissions* on 2026-11-03.
 
-While that setting was *Read repository contents and packages permissions*,
-the publish step failed with:
+While publication was failing it reported:
 
 ```
 HTTP 403: Resource not accessible by integration
 (https://api.github.com/repos/<owner>/<repo>/releases)
 ```
 
-The six kernel builds still succeed; only the aggregate release step fails, so
-the symptom is a red `Build all supported OP13 variants` run with six green
-matrix jobs and a red `Publish all supported OP13 variants` job.
+The six kernel builds still succeed, so the symptom is a red *Build all
+supported OP13 variants* run with six green matrix jobs and a red *Publish all
+supported OP13 variants* job.
 
-The setting was raised to *Read and write permissions* on 2026-11-03 and the
-publish step succeeded again. Check this setting first when release
-publication fails with HTTP 403 and every matrix job is green.
+A temporary diagnostic block added to the publish step showed that the workflow
+token itself is valid: a raw `POST /releases` with the very same token
+returned HTTP 201, the following `gh release create` succeeded, and the
+release `op13-all-r35-a1` was published with all six assets. The failure was
+therefore not a defect in the workflow, and the diagnostic block has been
+removed again.
+
+When publication fails with HTTP 403 while every matrix job is green, check
+the repository workflow-permission setting first. The error can also be
+transient on GitHub's side: the first re-run after the setting was raised
+still failed and a later run succeeded, so re-running the failed job is the
+cheapest way to tell the two apart.
+
