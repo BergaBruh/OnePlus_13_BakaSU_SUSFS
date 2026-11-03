@@ -201,6 +201,39 @@ source**: `c4127a25dcf3` cannot be rebuilt, so the fallback remains a
 compatibility experiment rather than a ColorOS 17 release, and it must not be
 relabelled as one.
 
+### Module signature gate
+
+The OnePlus GKI `gki_defconfig` enables `CONFIG_MODULE_SIG=y` and
+`CONFIG_MODULE_SIG_PROTECT=y`, so the signature path was checked as well.
+
+`kernel/module/signing.c` in the OnePlus 6.6.118 tree:
+
+```c
+	if (is_module_sig_enforced()) {
+		pr_notice("Loading of %s is rejected\n", reason);
+		return -EKEYREJECTED;
+	}
+#ifndef CONFIG_MODULE_SIG_PROTECT
+	return security_locked_down(LOCKDOWN_MODULE_SIGNATURE);
+#else
+	return 0;
+#endif
+```
+
+`CONFIG_MODULE_SIG_FORCE` is not set, so `sig_enforce` stays off and an
+untrusted or unsigned module is loaded with a taint instead of being rejected.
+The fallback kernel does not trust OnePlus's OEM signing key, so the stock
+`vendor_dlkm` modules are loaded as untrusted.
+
+`CONFIG_MODULE_SIG_PROTECT` additionally rejects a module that exports a
+protected GKI symbol without a valid signature
+(`kernel/module/main.c`, `gki_is_module_protected_export()`). The 464 shipped
+`vendor_dlkm` modules export 4205 distinct symbols; none of them uses a
+protected-name prefix (`security_*`, `selinux_*`, `bpf_*`, `kallsyms_*`,
+`printk_*`, `module_*`, `kernfs_*`, `tracepoint_*`, `audit_*`, `capable_*`,
+`perf_*`, `ftrace_*`). The check therefore does not reject any stock vendor
+module.
+
 ### Compatibility matrix
 
 | Aspect | Stock ColorOS 17 | Source-fallback build | Verdict |
@@ -212,6 +245,8 @@ relabelled as one.
 | vermagic flags | `SMP preempt mod_unload modversions aarch64` | identical | must match, does |
 | Exported symbol CRCs | reference | identical for every kernel export the shipped vendor modules import (2685 symbols, 0 mismatches) | match |
 | Non-kernel symbols | 1656 vendor-module exports and tracepoints | absent from both kernels | not a kernel ABI concern |
+| Module signature | `CONFIG_MODULE_SIG=y`, `CONFIG_MODULE_SIG_PROTECT=y` | same config, different trusted key | non-fatal: `CONFIG_MODULE_SIG_FORCE` is off, so untrusted modules load with a taint |
+| Protected exports | 4205 vendor exports, none with a protected-name prefix | same | no module is rejected by `gki_is_module_protected_export()` |
 | Kernel source commit | `c4127a25dcf3`, **unpublished** | `e1b346b6` (OxygenOS 16.0.0), published | fallback is not the official COS17 source |
 | Toolchain | AOSP clang 18.0.0 (`r510928`), `kleaf@build-host` | ZyC clang 19.0.0git | build-only difference |
 | Kernel build date | 2026-07-15 | 2026-11 | — |
