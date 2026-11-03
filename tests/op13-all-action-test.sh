@@ -43,7 +43,7 @@ actual_manifest_list=$(printf '%s\n' "${actual_manifests[@]}")
   fail "tracked manifest inventory must be exactly the approved fourteen files"
 
 mapfile -t actual_op13_configs < <(
-  git -C "$repo_root" ls-files 'configs/oos15/*.json' 'configs/oos16/*.json' |
+  git -C "$repo_root" ls-files 'configs/oos15/*.json' 'configs/oos16/*.json' 'configs/coloros17/*.json' |
     awk -F/ '$3 ~ /^OP13(-.*)?\.json$/ { print }' | sort
 )
 expected_config_list=$(printf '%s\n' "${expected_configs[@]}")
@@ -196,6 +196,7 @@ for required, message in [
     ('ds_userns_mode="${OP_DS_USERNS_MODE:-hardened}"', "Droidspaces USER_NS mode must default safely during validation"),
     ("Input 'ds_userns_mode' must be 'hardened' or 'compat'. Got: '$ds_userns_mode'", "Droidspaces USER_NS mode must reject unsupported policies"),
     ('custom_patches=false cannot be combined with opt=true or hmbird=true', "disabled custom patches must not leave opt or hmbird as false-positive flags"),
+    ('^(OOS|COS)[0-9]+$', "OS validation must accept versioned OxygenOS and ColorOS identifiers"),
 ]:
     if required not in validate_body:
         raise SystemExit(message)
@@ -737,6 +738,9 @@ require(r"^\s{4}strategy:\s*$", "build job must declare a strategy")
 require(r"^\s{6}fail-fast:\s*false\s*$", "matrix strategy must set fail-fast: false")
 require(r"^\s{6}matrix:\s*$", "build job strategy must declare a matrix")
 require(r"^\s{8}include:\s*$", "matrix strategy must use an include list")
+require_text('^configs/(oos15|oos16|coloros17)/', "matrix config validation must allow ColorOS 17 paths")
+require_text('^manifests/(oos15|oos16|coloros17)/', "matrix manifest validation must allow ColorOS 17 paths")
+require_text('OS: ${{ matrix.os }}', "release metadata must use the generic matrix OS field")
 
 include_section = text[text.index("include:") :]
 row_blocks = re.findall(r"(?ms)^ {10}- slug:\s*[^\n]+.*?(?=^ {10}- slug:|\Z)", include_section)
@@ -759,7 +763,11 @@ require_text(".sources.susfs.sha", "workflow must retain the SUSFS state pin")
 require_text("resukisu_ref=\"$(jq -er '.sources.resukisu.ref' \"$state\")\"", "workflow must read the ReSukiSU CI branch")
 require_text("susfs_ref=\"$(jq -er '.sources.susfs.ref' \"$state\")\"", "workflow must read the compatible SUSFS branch")
 require_text("[[ \"$resukisu_ref\" == \"main\" ]]", "workflow must require the ReSukiSU CI/Beta branch")
-require_text("[[ \"$susfs_ref\" == \"gki-android15-6.6\" ]]", "workflow must require the compatible SUSFS branch")
+require_text("kmi_android=\"$(jq -er '.target.kernel_kmi_android_generation' \"$state\")\"", "workflow must read the authoritative KMI Android generation")
+require_text("linux_kernel=\"$(jq -er '.target.linux_kernel_version' \"$state\")\"", "workflow must read the authoritative Linux kernel version")
+require_text("linux_kernel_mm=\"$(awk -F. '{print $1\".\"$2}' <<<\"$linux_kernel\")\"", "workflow must derive the Linux major/minor version")
+require_text("expected_susfs_ref=\"gki-$kmi_android-$linux_kernel_mm\"", "workflow must derive the compatible SUSFS branch from actual KMI/kernel state")
+require_text("[[ \"$susfs_ref\" == \"$expected_susfs_ref\" ]]", "workflow must require the dynamically compatible SUSFS branch")
 require_text("ksu_branch_or_hash: ${{ steps.config.outputs.resukisu_sha }}", "workflow must build the verified ReSukiSU state pin")
 require_text("RESUKISU_SHA: ${{ steps.build.outputs.ksu_commit_sha }}", "release metadata must use the resolved ReSukiSU commit")
 require_text("susfs_commit_hash_or_branch: ${{ steps.config.outputs.susfs_sha }}", "workflow must build the verified SUSFS state pin")
@@ -789,7 +797,7 @@ if re.search(r"(?m)^ {4}if:\s*.*\b(?:always|failure|cancelled)\s*\(", publish_se
     raise SystemExit("publish must rely on default all-success gating")
 require_text("op13-all-r${RUN_NUMBER}-a${RUN_ATTEMPT}", "release tag must be dynamic and shared")
 require_text("OnePlus 13 ReSukiSU + SUSFS builds r${RUN_NUMBER}", "release title must be dynamic and non-regional")
-require_text("| Slug | Config | Manifest | Compatibility | OOS | Kernel/KMI | ReSukiSU | SUSFS | ZIP | SHA-256 |", "release body must generate the metadata table")
+require_text("| Slug | Config | Manifest | Compatibility | OS | Kernel/KMI | ReSukiSU | SUSFS | ZIP | SHA-256 |", "release body must generate the metadata table")
 
 config_step = re.search(
     r"(?ms)^      - name:\s*Validate and read matrix configuration\s*$\n(?P<body>.*?)(?=^      - name:|\Z)",
@@ -861,7 +869,7 @@ for required, message in [
     ("find release-dist -type f -name '*.zip'", "publish must enumerate ZIP files"),
     ('[[ "${#metadata_files[@]}" -eq 6 ]]', "publish must require exactly six metadata files"),
     ('[[ "${#zip_files[@]}" -eq 6 ]]', "publish must require exactly six ZIP files"),
-    ('keys == ["compatibility", "config", "kernel_kmi", "manifest", "oos", "resukisu", "sha256", "slug", "susfs", "zip"]', "publish must require the exact metadata schema"),
+    ('keys == ["compatibility", "config", "kernel_kmi", "manifest", "os", "resukisu", "sha256", "slug", "susfs", "zip"]', "publish must require the exact metadata schema"),
     ('all(.[]; type == "string" and length > 0)', "publish must require every metadata field to be a non-empty string"),
     ('declare -A seen_zip=()', "publish must track unique ZIP basenames"),
     ('[[ -z "${seen_zip[$zip]+x}" ]]', "publish must reject duplicate ZIP basenames"),
@@ -885,7 +893,7 @@ for slug, expected in mapping_expectations.items():
         raise SystemExit(f"publish validation is missing the exact mapping branch for {slug}")
     mapping_body = mapping.group("body")
     actual = []
-    for field in ("config", "manifest", "compatibility", "oos"):
+    for field in ("config", "manifest", "compatibility", "os"):
         value = re.search(rf"(?m)^                expected_{field}=(?:'([^']*)'|([^\n]+))$", mapping_body)
         actual.append((value.group(1) if value and value.group(1) is not None else value.group(2).strip()) if value else None)
     if tuple(actual) != expected:

@@ -260,8 +260,8 @@ runs:
         
         if [[ -z "$os_version" ]]; then
           errors+=("Input 'os_version' cannot be empty")
-        elif [[ ! "$os_version" =~ ^OOS ]]; then
-          errors+=("Input 'os_version' does not start with 'OOS'. Got: '$os_version'")
+        elif [[ ! "$os_version" =~ ^(OOS|COS)[0-9]+$ ]]; then
+          errors+=("Input 'os_version' must match OOS<major> or COS<major>. Got: '$os_version'")
         fi
         
         if [[ -z "$hmbird" ]]; then
