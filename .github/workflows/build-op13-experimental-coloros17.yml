@@ -79,7 +79,7 @@ jobs:
           STATE_PATH=.github/update-state/op13-experimental-coloros17-source-fallback.json
           CONFIG_PATH=configs/coloros17/OP13-GLOBAL-EXPERIMENTAL-6.6.118.json
           MANIFEST_PATH=manifests/coloros17/oneplus_13_global_cos17_source_fallback_6.6.118.xml
-          EXPECTED_RESUKISU_SHA=8450dd287ef6ee25ca2b6b858b43c9354c73060c
+          EXPECTED_RESUKISU_SHA=516d3e87fbc986ccefdde2c2765f1700612441a9
           EXPECTED_SUSFS_SHA=937215cb3a1b1f333d764c366c7a49972fa8e7a0
           EXPECTED_KERNEL_COMMON_SHA=e1b346b6b4f4096eb342ae3684838a942fd6f6c4
           EXPECTED_KERNEL_MODULES_SHA=d50b305f7da9e14715a25120a4ac7b1a4b8b97c3
@@ -109,6 +109,7 @@ jobs:
              and .target.source_fallback == true
              and .target.kernel_kmi_android_generation == "android15"
              and .target.linux_kernel_version == "6.6.118"
+             and .target.kernel_driver_uapi_version == 6
              and .target.config == $config
              and .target.manifest == $manifest
              and .sources.resukisu.sha == $resukisu
@@ -166,6 +167,19 @@ jobs:
             echo "::error::SUSFS revision differs from the approved fallback pin"
             exit 1
           }
+
+          # A successful compilation does not guarantee that the manager and
+          # the embedded driver implement the same UAPI. Check the actual
+          # checked-out BakaSU tree before publishing an experimental ZIP.
+          kernel_uapi_header="$GITHUB_WORKSPACE/OP13/kernel_platform/KernelSU/uapi/supercall.h"
+          [[ -f "$kernel_uapi_header" ]] || {
+            echo "::error::BakaSU UAPI header missing from the kernel checkout"
+            exit 1
+          }
+          if ! grep -Eq 'KERNEL_SU_UAPI_VERSION[[:space:]]*=[[:space:]]*6[[:space:]]*;' "$kernel_uapi_header"; then
+            echo "::error::BakaSU driver UAPI is not 6; experimental COS17 manager contract would fail"
+            exit 1
+          fi
 
       - name: Stage explicitly experimental ZIP
         id: stage
@@ -229,6 +243,7 @@ jobs:
           Common source: e1b346b6b4f4096eb342ae3684838a942fd6f6c4
           Modules source: d50b305f7da9e14715a25120a4ac7b1a4b8b97c3
           ReSukiSU/BakaSU: $RESUKISU_SHA
+          Kernel driver UAPI: 6 (manager must be UAPI 6)
           SUSFS: $SUSFS_SHA
           Built kernel version: $KERNEL_VERSION
           Image SHA-256: $IMAGE_SHA256
