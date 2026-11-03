@@ -196,6 +196,24 @@ jobs:
             exit 1
           }
 
+          # KernelSU Kernel Flash expects a real AnyKernel3 ZIP, not an outer
+          # GitHub Actions archive containing another ZIP and a text notice.
+          unzip -tq "$staged_zip" >/dev/null || {
+            echo "::error::Generated AnyKernel3 ZIP failed archive integrity check"
+            exit 1
+          }
+          for required in \
+            META-INF/com/google/android/update-binary \
+            META-INF/com/google/android/updater-script \
+            anykernel.sh \
+            tools/ak3-core.sh \
+            Image; do
+            if ! unzip -Z -1 "$staged_zip" | grep -Fxq "$required"; then
+              echo "::error::Not a flashable AnyKernel3 ZIP: missing $required"
+              exit 1
+            fi
+          done
+
           notice="$GITHUB_WORKSPACE/EXPERIMENTAL-COS17-SOURCE-FALLBACK-NOTICE.txt"
           cat > "$notice" <<EOF
           EXPERIMENTAL / UNVERIFIED COLOROS 17 SOURCE-FALLBACK BUILD
@@ -222,13 +240,18 @@ jobs:
           printf 'staged_name=%s\n' "$staged_name" >> "$GITHUB_OUTPUT"
           printf 'notice=%s\n' "$notice" >> "$GITHUB_OUTPUT"
 
-      - name: Upload EXPERIMENTAL-COS17-CPH2653-SOURCE-FALLBACK
+      - name: Upload flashable AnyKernel3 ZIP directly (no double ZIP)
         uses: actions/upload-artifact@v7
         with:
-          name: EXPERIMENTAL-COS17-CPH2653-SOURCE-FALLBACK
-          path: |
-            ${{ github.workspace }}/${{ steps.stage.outputs.staged_name }}
-            ${{ steps.stage.outputs.notice }}
+          path: ${{ github.workspace }}/${{ steps.stage.outputs.staged_name }}
+          archive: false
           if-no-files-found: error
-          compression-level: 0
+          retention-days: 30
+
+      - name: Upload experimental source-fallback notice separately
+        uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.stage.outputs.notice }}
+          archive: false
+          if-no-files-found: error
           retention-days: 30
