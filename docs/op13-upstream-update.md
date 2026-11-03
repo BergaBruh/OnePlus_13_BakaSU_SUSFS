@@ -1,5 +1,9 @@
 # OnePlus 13 upstream update — 2026-10-09
 
+> **2026-11-03:** ColorOS 17 / Android 17 is now the next OP13 Global target.
+> The migration is tracked separately in [op13-coloros17-migration.md](op13-coloros17-migration.md).
+> This document remains the evidence record for the last known-good OxygenOS 16 source baseline.
+
 Requested firmware: OxygenOS **16.0.10.600**. No matching source publication
 was found in the OnePlusOSS SM8750 repositories. The build uses the latest
 published OnePlus 13 source release, **16.0.9.401(EX01)**, as requested when
