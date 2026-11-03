@@ -90,5 +90,24 @@ for value in required_workflow_text:
     if value not in workflow:
         raise SystemExit(f"experimental COS17 workflow missing contract text: {value}")
 
+# GitHub Actions must publish the inner, directly flashable AK3 ZIP. Its
+# default artifact-archive wrapper is not understood by KernelSU Kernel Flash.
+required_direct_zip_contract = [
+    'unzip -tq "$staged_zip"',
+    'META-INF/com/google/android/update-binary',
+    'META-INF/com/google/android/updater-script',
+    'tools/ak3-core.sh',
+    'entries_file="$RUNNER_TEMP/cos17-ak3-zip-entries.txt"',
+    'path: ${{ github.workspace }}/${{ steps.stage.outputs.staged_name }}',
+    'path: ${{ steps.stage.outputs.notice }}',
+]
+for value in required_direct_zip_contract:
+    if value not in workflow:
+        raise SystemExit(f"experimental COS17 direct AK3 contract missing {value}")
+if workflow.count("archive: false") < 2:
+    raise SystemExit("experimental AK3 ZIP and notice must be uploaded separately without outer ZIP wrappers")
+if 'path: |\n            ${{ github.workspace }}/${{ steps.stage.outputs.staged_name }}' in workflow:
+    raise SystemExit("flashable ZIP must never share a zipped artifact bundle with the notice")
+
 print("PASS: experimental OP13 ColorOS 17 source-fallback contract")
 PY
