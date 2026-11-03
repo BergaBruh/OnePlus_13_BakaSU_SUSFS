@@ -114,11 +114,11 @@ jobs:
           set -euo pipefail
 
           state=.github/update-state/op13-upstreams.json
-          [[ "$MATRIX_CONFIG" =~ ^configs/oos(15|16)/[A-Za-z0-9._-]+\.json$ ]] || {
+          [[ "$MATRIX_CONFIG" =~ ^configs/(oos15|oos16|coloros17)/[A-Za-z0-9._-]+\.json$ ]] || {
             echo "::error::Unexpected matrix config path: $MATRIX_CONFIG"
             exit 1
           }
-          [[ "$MATRIX_MANIFEST" =~ ^manifests/oos(15|16)/[A-Za-z0-9._-]+\.xml$ ]] || {
+          [[ "$MATRIX_MANIFEST" =~ ^manifests/(oos15|oos16|coloros17)/[A-Za-z0-9._-]+\.xml$ ]] || {
             echo "::error::Unexpected matrix manifest path: $MATRIX_MANIFEST"
             exit 1
           }
@@ -173,8 +173,12 @@ jobs:
             echo "::error::Invalid ReSukiSU state pin"
             exit 1
           }
-          [[ "$susfs_ref" == "gki-android15-6.6" ]] || {
-            echo "::error::SUSFS ref must track the compatible gki-android15-6.6 branch"
+          kmi_android="$(jq -er '.target.kernel_kmi_android_generation' "$state")"
+          linux_kernel="$(jq -er '.target.linux_kernel_version' "$state")"
+          linux_kernel_mm="$(awk -F. '{print $1"."$2}' <<<"$linux_kernel")"
+          expected_susfs_ref="gki-$kmi_android-$linux_kernel_mm"
+          [[ "$susfs_ref" == "$expected_susfs_ref" ]] || {
+            echo "::error::SUSFS ref $susfs_ref does not match target KMI/kernel branch $expected_susfs_ref"
             exit 1
           }
           [[ "$susfs_sha" =~ ^[0-9a-f]{40}$ ]] || {
@@ -392,7 +396,7 @@ jobs:
           {
             echo "# OnePlus 13 ReSukiSU + SUSFS builds"
             echo
-            echo "| Slug | Config | Manifest | Compatibility | OOS | Kernel/KMI | ReSukiSU | SUSFS | ZIP | SHA-256 |"
+            echo "| Slug | Config | Manifest | Compatibility | OS | Kernel/KMI | ReSukiSU | SUSFS | ZIP | SHA-256 |"
             echo "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"
           } > "$release_notes"
 
