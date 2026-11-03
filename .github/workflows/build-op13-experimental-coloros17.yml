@@ -202,13 +202,15 @@ jobs:
             echo "::error::Generated AnyKernel3 ZIP failed archive integrity check"
             exit 1
           }
+          entries_file="$RUNNER_TEMP/cos17-ak3-zip-entries.txt"
+          unzip -Z -1 "$staged_zip" > "$entries_file"
           for required in \
             META-INF/com/google/android/update-binary \
             META-INF/com/google/android/updater-script \
             anykernel.sh \
             tools/ak3-core.sh \
             Image; do
-            if ! unzip -Z -1 "$staged_zip" | grep -Fxq "$required"; then
+            if ! grep -Fxq "$required" "$entries_file"; then
               echo "::error::Not a flashable AnyKernel3 ZIP: missing $required"
               exit 1
             fi
