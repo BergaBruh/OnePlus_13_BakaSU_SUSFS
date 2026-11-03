@@ -2,8 +2,8 @@
 
 Status checked: **2026-11-03**
 
-Target device: **OnePlus 13 Global / CPH2653**  
-Target firmware family: **ColorOS 17**  
+Target device: **OnePlus 13 Global / CPH2653**
+Target firmware family: **ColorOS 17**
 Userspace generation: **Android 17**
 
 ## Current gate
