@@ -25,7 +25,24 @@ runs:
         if [[ "$OP_MANIFEST" == https://* ]]; then
           curl --fail --show-error --location --proto '=https' "$OP_MANIFEST" -o manifest.xml
         elif [[ "$OP_BRANCH" == wild/* ]]; then
-          cp "../manifests/$(echo "$OP_OS_VERSION" | tr '[:upper:]' '[:lower:]')/$OP_MANIFEST" manifest.xml
+          case "$OP_OS_VERSION" in
+            OOS[0-9]*)
+              manifest_family="oos${OP_OS_VERSION#OOS}"
+              ;;
+            COS[0-9]*)
+              manifest_family="coloros${OP_OS_VERSION#COS}"
+              ;;
+            *)
+              echo "::error::Unsupported local manifest OS family: $OP_OS_VERSION"
+              exit 1
+              ;;
+          esac
+          manifest_path="../manifests/$manifest_family/$OP_MANIFEST"
+          [[ -f "$manifest_path" ]] || {
+            echo "::error::Local manifest not found: $manifest_path"
+            exit 1
+          }
+          cp "$manifest_path" manifest.xml
         else
           curl --fail --show-error --location --proto '=https' "https://raw.githubusercontent.com/OnePlusOSS/kernel_manifest/refs/heads/$OP_BRANCH/$OP_MANIFEST" -o manifest.xml
         fi
