@@ -3,7 +3,7 @@
 # 🔥 BergaBruh's Fork of Wild Kernels for OnePlus 13
 
 [![KernelSU](https://img.shields.io/badge/KernelSU-Supported-green)](https://kernelsu.org/)
-[![ReSukiSU](https://img.shields.io/badge/ReSukiSU-Supported-green)](https://resukisu.github.io/)
+[![BakaSU](https://img.shields.io/badge/BakaSU-Supported-green)](https://bakasu.org/)
 [![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-orange)](https://gitlab.com/simonpunk/susfs4ksu)
 [![OnePlusOSS Tracking Status](https://img.shields.io/badge/OnePlusOSS--Tracker-active-green)](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS/blob/status-page/README.md)
 
@@ -119,6 +119,7 @@ You can also find Installation instructions in the release notes.
 
 | 🔧 **Project** | 👨‍💻 **Developer** | 🔗 **Link** |
 |:---------------:|:----------------:|:-----------:|
+| **OnePlus_BakaSU_SUSFS (Original)** | huangdihd | [![GitHub](https://img.shields.io/badge/GitHub-huangdihd-blue?style=flat-square&logo=github)](https://github.com/huangdihd/OnePlus_BakaSU_SUSFS) |
 | **KernelSU** | tiann | [![GitHub](https://img.shields.io/badge/GitHub-tiann-blue?style=flat-square&logo=github)](https://github.com/tiann/KernelSU) |
 | **ReSukiSU** | resukisu | [![GitHub](https://img.shields.io/badge/GitHub-resukisu-blue?style=flat-square&logo=github)](https://github.com/Baka-SU/BakaSU) |
 | **Magic-KSU** | 5ec1cff | [![GitHub](https://img.shields.io/badge/GitHub-5ec1cff-blue?style=flat-square&logo=github)](https://github.com/5ec1cff/KernelSU) |
