@@ -8,7 +8,12 @@ import subprocess
 import textwrap
 
 for path in Path('.github/workflows').glob('*.yml'):
-    assert 'liblz4-tool' not in path.read_text(), f'{path}: use the lz4 package'
+    text = path.read_text()
+    assert 'liblz4-tool' not in text, f'{path}: use the lz4 package'
+    for line in text.splitlines():
+        if 'apt-get' in line and 'update -qq' in line:
+            assert 'Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources' in line
+            assert 'Dir::Etc::sourceparts=-' in line
 
 workflow = Path('.github/workflows/build-op13-experimental-susfs240-dev.yml').read_text()
 for required in (
