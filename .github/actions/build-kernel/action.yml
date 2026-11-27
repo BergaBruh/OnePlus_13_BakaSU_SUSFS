@@ -1507,6 +1507,9 @@ runs:
           # keeps OOS naming everywhere else, so translate OOS<NN> -> A<NN> only
           # for the fengchi filename lookup against the upstream patches repo.
           HMBIRD_OS="${OP_OS_VERSION/OOS/A}"
+          if [ "$OP_OS_VERSION" = COS17 ] && [ "$OP_MANIFEST" = oneplus_13_global_cos17_source_fallback_6.6.118.xml ]; then
+            HMBIRD_OS=A16
+          fi
           dos2unix "$FENGCHI_DIR/fengchi_${HMBIRD_MODEL}_${HMBIRD_OS}.patch"
           if ! patch -p1 --fuzz=2 < "$FENGCHI_DIR/fengchi_${HMBIRD_MODEL}_${HMBIRD_OS}.patch"; then
             echo "::warning::hmbird fengchi patch did not apply cleanly. Checking for known recoverable rejects."

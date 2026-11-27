@@ -3,6 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 python3 - <<'PY'
 from pathlib import Path
+import json
 import re
 import subprocess
 import textwrap
@@ -15,6 +16,11 @@ for path in Path('.github/workflows').glob('*.yml'):
             assert 'Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources' in line
             assert 'Dir::Etc::sourceparts=-' in line
 
+for path in Path('configs').rglob('*.json'):
+    config = json.loads(path.read_text())
+    for feature in ('hmbird', 'bbg', 'bbr', 'bbr3', 'ttl', 'ip_set', 'unicode', 'ntsync'):
+        assert config.get(feature) is True, f'{path}: {feature} must be enabled'
+
 workflow = Path('.github/workflows/build-op13-experimental-susfs240-dev.yml').read_text()
 for required in (
     'workflow_dispatch:', 'refs/heads/dev', 'ksu_branch_or_hash: ${{ steps.pins.outputs.dev_sha }}',
@@ -24,6 +30,9 @@ for required in (
     'ColorOS 17 uses OxygenOS source fallback; do not flash or publish',
 ):
     assert required in workflow, required
+action = Path('.github/actions/build-kernel/action.yml').read_text()
+assert '[ "$OP_OS_VERSION" = COS17 ] && [ "$OP_MANIFEST" = oneplus_13_global_cos17_source_fallback_6.6.118.xml ]' in action
+assert 'HMBIRD_OS=A16' in action
 assert 'gh release' not in workflow
 assert '\n  push:' not in workflow
 for script in re.findall(r'(?ms)^        run: \|\n(.*?)(?=^      - name:|\Z)', workflow):
