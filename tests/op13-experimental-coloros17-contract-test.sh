@@ -73,8 +73,8 @@ sources = state.get("sources", {})
 expected_sources = {
     "kernel_common": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
     "kernel_modules": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
-    "resukisu": "516d3e87fbc986ccefdde2c2765f1700612441a9",
-    "susfs": "c7f670f57b7d43d75066b6657f8aee9cdf580d96",
+    "resukisu": "d8d96fca0586e852d7f14a1a8b808d03201b136c",
+    "susfs": "f98f08223bbf469cc0a1542166383d253557fc32",
 }
 for key, sha in expected_sources.items():
     if sources.get(key, {}).get("sha") != sha:

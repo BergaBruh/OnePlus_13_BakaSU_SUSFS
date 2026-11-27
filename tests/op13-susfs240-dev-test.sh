@@ -21,6 +21,21 @@ for path in Path('configs').rglob('*.json'):
     for feature in ('hmbird', 'bbg', 'bbr', 'bbr3', 'ttl', 'ip_set', 'unicode', 'ntsync'):
         assert config.get(feature) is True, f'{path}: {feature} must be enabled'
 
+for state_path in ('.github/update-state/op13-upstreams.json', '.github/update-state/op13-experimental-resukisu-susfs.json', '.github/update-state/op13-experimental-coloros17-source-fallback.json'):
+    sources = json.loads(Path(state_path).read_text())['sources']
+    assert sources['resukisu']['ref'] == 'dev'
+    assert sources['resukisu']['sha'] == 'd8d96fca0586e852d7f14a1a8b808d03201b136c'
+    assert sources['susfs']['sha'] == 'f98f08223bbf469cc0a1542166383d253557fc32'
+    assert sources['susfs']['version'] == 'v2.4.0'
+
+for path in ('.github/workflows/build-op13-all.yml', '.github/workflows/build-op13-experimental-resukisu-susfs.yml', '.github/workflows/build-op13-experimental-coloros17.yml'):
+    text = Path(path).read_text()
+    assert "experimental_susfs_240: 'true'" in text
+    assert text.index('Verify SUSFS 2.4 and BakaSU driver UAPI') < text.index('uses: actions/upload-artifact@v7')
+    assert 'KERNEL_SU_UAPI_VERSION' in text
+aggregate = Path('.github/workflows/build-op13-all.yml').read_text()
+assert "if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}" in aggregate
+
 workflow = Path('.github/workflows/build-op13-experimental-susfs240-dev.yml').read_text()
 for required in (
     'workflow_dispatch:', 'refs/heads/dev', 'ksu_branch_or_hash: ${{ steps.pins.outputs.dev_sha }}',

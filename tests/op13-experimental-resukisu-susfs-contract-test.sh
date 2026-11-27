@@ -22,8 +22,8 @@ expected = {
     "manifest": "manifests/oos16/oneplus_13_global_6.6.118_w.xml",
     "kernel_common": "e1b346b6b4f4096eb342ae3684838a942fd6f6c4",
     "kernel_modules": "d50b305f7da9e14715a25120a4ac7b1a4b8b97c3",
-    "resukisu": "8450dd287ef6ee25ca2b6b858b43c9354c73060c",
-    "susfs": "937215cb3a1b1f333d764c366c7a49972fa8e7a0",
+    "resukisu": "d8d96fca0586e852d7f14a1a8b808d03201b136c",
+    "susfs": "f98f08223bbf469cc0a1542166383d253557fc32",
 }
 
 if not state_path.is_file():
@@ -67,8 +67,8 @@ if sources.get("resukisu", {}).get("repository") != "Baka-SU/BakaSU":
     raise SystemExit("experimental state must identify the ReSukiSU repository")
 if sources.get("susfs", {}).get("repository") != "https://gitlab.com/simonpunk/susfs4ksu":
     raise SystemExit("experimental state must identify the SUSFS repository")
-if sources.get("susfs", {}).get("version") != "v2.3.0":
-    raise SystemExit("experimental state must record SUSFS v2.3.0")
+if sources.get("susfs", {}).get("version") != "v2.4.0":
+    raise SystemExit("experimental state must record SUSFS v2.4.0")
 
 workflow = workflow_path.read_text(encoding="utf-8")
 if not re.search(r"(?m)^\s*workflow_dispatch:\s*$", workflow):

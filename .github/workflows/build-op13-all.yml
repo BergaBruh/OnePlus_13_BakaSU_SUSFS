@@ -14,6 +14,11 @@ on:
         required: true
         type: boolean
         default: false
+      publish_release:
+        description: Publish after independently validating the experimental builds
+        required: true
+        type: boolean
+        default: false
       debug:
         description: Upload diagnostic artifacts
         required: true
@@ -165,8 +170,8 @@ jobs:
           global_kmi="$(jq -er '.target.kmi' "$state")"
           # ReSukiSU now lives at Baka-SU/BakaSU. Use immutable state pins
           # for both the root driver and the matching android15-6.6 SUSFS.
-          [[ "$resukisu_ref" == "main" ]] || {
-            echo "::error::ReSukiSU ref must track the CI/Beta branch 'main'"
+          [[ "$resukisu_ref" == "dev" ]] || {
+            echo "::error::BakaSU ref must track the experimental branch 'dev'"
             exit 1
           }
           [[ "$resukisu_sha" =~ ^[0-9a-f]{40}$ ]] || {
@@ -206,6 +211,7 @@ jobs:
           ksu_type: ReSukiSU
           ksu_branch_or_hash: ${{ steps.config.outputs.resukisu_sha }}
           susfs_commit_hash_or_branch: ${{ steps.config.outputs.susfs_sha }}
+          experimental_susfs_240: 'true'
           optimize_level: ${{ inputs.optimize_level || 'O2' }}
           clean: ${{ inputs.clean_build || false }}
           debug: ${{ inputs.debug || false }}
@@ -213,6 +219,20 @@ jobs:
           archive_final_zip: false
           upload_final_zip: false
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SUSFS 2.4 and BakaSU driver UAPI
+        shell: bash
+        env:
+          EXPECTED_DEV: ${{ steps.config.outputs.resukisu_sha }}
+          ACTUAL_DEV: ${{ steps.build.outputs.ksu_commit_sha }}
+          ACTUAL_SUSFS: ${{ steps.build.outputs.susfs_commit_sha }}
+          ACTUAL_VERSION: ${{ steps.build.outputs.susfs_version }}
+        run: |
+          set -euo pipefail
+          [[ "$ACTUAL_DEV" == "$EXPECTED_DEV" ]]
+          [[ "$ACTUAL_SUSFS" == f98f08223bbf469cc0a1542166383d253557fc32 && "$ACTUAL_VERSION" == v2.4.0 ]]
+          grep -Eq 'KERNEL_SU_UAPI_VERSION[[:space:]]*=[[:space:]]*6[[:space:]]*;' "$GITHUB_WORKSPACE/OP13/kernel_platform/KernelSU/uapi/supercall.h"
+          echo '::warning::Manager and device compatibility are unverified'
 
       - name: Prefix and describe release ZIP
         shell: bash
@@ -312,6 +332,7 @@ jobs:
 
   publish:
     name: Publish all supported OP13 variants
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_release }}
     needs: build
     runs-on: ubuntu-latest
     env:

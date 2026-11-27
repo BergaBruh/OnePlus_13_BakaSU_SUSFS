@@ -40,14 +40,14 @@
     },
     "resukisu": {
       "repository": "Baka-SU/BakaSU",
-      "ref": "main",
-      "sha": "516d3e87fbc986ccefdde2c2765f1700612441a9"
+      "ref": "dev",
+      "sha": "d8d96fca0586e852d7f14a1a8b808d03201b136c"
     },
     "susfs": {
       "repository": "https://gitlab.com/simonpunk/susfs4ksu",
       "ref": "gki-android15-6.6",
-      "version": "v2.3.0",
-      "sha": "c7f670f57b7d43d75066b6657f8aee9cdf580d96"
+      "version": "v2.4.0",
+      "sha": "f98f08223bbf469cc0a1542166383d253557fc32"
     }
   }
 }

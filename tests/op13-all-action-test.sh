@@ -778,7 +778,7 @@ require_text(".sources.susfs.ref", "workflow must retain the compatible SUSFS br
 require_text(".sources.susfs.sha", "workflow must retain the SUSFS state pin")
 require_text("resukisu_ref=\"$(jq -er '.sources.resukisu.ref' \"$state\")\"", "workflow must read the ReSukiSU CI branch")
 require_text("susfs_ref=\"$(jq -er '.sources.susfs.ref' \"$state\")\"", "workflow must read the compatible SUSFS branch")
-require_text("[[ \"$resukisu_ref\" == \"main\" ]]", "workflow must require the ReSukiSU CI/Beta branch")
+require_text("[[ \"$resukisu_ref\" == \"dev\" ]]", "workflow must require the ReSukiSU CI/Beta branch")
 require_text("kmi_android=\"$(jq -er '.target.kernel_kmi_android_generation' \"$state\")\"", "workflow must read the authoritative KMI Android generation")
 require_text("linux_kernel=\"$(jq -er '.target.linux_kernel_version' \"$state\")\"", "workflow must read the authoritative Linux kernel version")
 require_text("linux_kernel_mm=\"$(awk -F. '{print $1\".\"$2}' <<<\"$linux_kernel\")\"", "workflow must derive the Linux major/minor version")

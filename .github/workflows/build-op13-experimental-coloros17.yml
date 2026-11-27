@@ -79,8 +79,8 @@ jobs:
           STATE_PATH=.github/update-state/op13-experimental-coloros17-source-fallback.json
           CONFIG_PATH=configs/coloros17/OP13-GLOBAL-EXPERIMENTAL-6.6.118.json
           MANIFEST_PATH=manifests/coloros17/oneplus_13_global_cos17_source_fallback_6.6.118.xml
-          EXPECTED_RESUKISU_SHA=516d3e87fbc986ccefdde2c2765f1700612441a9
-          EXPECTED_SUSFS_SHA=c7f670f57b7d43d75066b6657f8aee9cdf580d96
+          EXPECTED_RESUKISU_SHA=d8d96fca0586e852d7f14a1a8b808d03201b136c
+          EXPECTED_SUSFS_SHA=f98f08223bbf469cc0a1542166383d253557fc32
           EXPECTED_KERNEL_COMMON_SHA=e1b346b6b4f4096eb342ae3684838a942fd6f6c4
           EXPECTED_KERNEL_MODULES_SHA=d50b305f7da9e14715a25120a4ac7b1a4b8b97c3
           # KMI string reported by the stock ColorOS 17 CPH2653_11.H.05_3050
@@ -153,12 +153,27 @@ jobs:
           ksu_type: ReSukiSU
           ksu_branch_or_hash: ${{ steps.pins.outputs.resukisu_sha }}
           susfs_commit_hash_or_branch: ${{ steps.pins.outputs.susfs_sha }}
+          experimental_susfs_240: 'true'
           clean: true
           debug: true
           artifact_slug: cos17-source-fallback
           archive_final_zip: false
           upload_final_zip: false
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SUSFS 2.4 and BakaSU driver UAPI
+        shell: bash
+        env:
+          EXPECTED_DEV: ${{ steps.pins.outputs.resukisu_sha }}
+          ACTUAL_DEV: ${{ steps.build.outputs.ksu_commit_sha }}
+          ACTUAL_SUSFS: ${{ steps.build.outputs.susfs_commit_sha }}
+          ACTUAL_VERSION: ${{ steps.build.outputs.susfs_version }}
+        run: |
+          set -euo pipefail
+          [[ "$ACTUAL_DEV" == "$EXPECTED_DEV" ]]
+          [[ "$ACTUAL_SUSFS" == f98f08223bbf469cc0a1542166383d253557fc32 && "$ACTUAL_VERSION" == v2.4.0 ]]
+          grep -Eq 'KERNEL_SU_UAPI_VERSION[[:space:]]*=[[:space:]]*6[[:space:]]*;' "$GITHUB_WORKSPACE/OP13/kernel_platform/KernelSU/uapi/supercall.h"
+          echo '::warning::Manager and device compatibility are unverified'
 
       - name: Verify resolved immutable pins
         shell: bash
