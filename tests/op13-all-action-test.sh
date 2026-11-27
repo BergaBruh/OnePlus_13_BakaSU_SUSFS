@@ -117,6 +117,7 @@ for relative_path in sys.argv[4:]:
     if caller_path == workflow_path or relative_path in (
         ".github/workflows/build-op13-experimental-resukisu-susfs.yml",
         ".github/workflows/build-op13-experimental-coloros17.yml",
+        ".github/workflows/build-op13-experimental-susfs240-dev.yml",
     ):
         continue
     caller_text = caller_path.read_text(encoding="utf-8")
@@ -221,6 +222,16 @@ if not susfs_step:
 susfs_body = susfs_step.group("body")
 if '"v2.2.0"|"v2.3.0")' not in susfs_body:
     raise SystemExit("SUSFS v2.3.0 must be accepted by the patch compatibility matrix")
+experimental_240 = re.search(r'(?ms)^\s*"v2\.4\.0"\)\s*$\n(.*?)^\s*;;\s*$', susfs_body)
+if not experimental_240 or any(guard not in experimental_240.group(1) for guard in [
+    '$EXPERIMENTAL_SUSFS_240" != "true',
+    '${{ inputs.ksu_type }}" != "ReSukiSU',
+    '${{ env.ANDROID_VER }}" != "android15',
+    '${{ env.KERNEL_VER }}" != "6.6',
+    '${{ inputs.upload_final_zip }}" != "false',
+    "exit 1",
+]):
+    raise SystemExit("SUSFS v2.4.0 must remain restricted to opt-in diagnostic builds")
 susfs_patch = 'patch -p1 --forward < "$SUSFS_FOLDER/kernel_patches/50_add_susfs_in_${{ env.SUSFS_KERNEL_BRANCH }}.patch"'
 fold_decl = "extern void __fold_filemap_fixup_entry(struct vma_iterator *iter, unsigned long *end);"
 fold_decl_check = f"grep -qxF '{fold_decl}' ./include/linux/page_size_compat.h"

@@ -22,6 +22,10 @@ inputs:
     required: false
     type: string
     default: ""
+  experimental_susfs_240:
+    description: 'Allow unvalidated SUSFS 2.4.0 in diagnostic builds only'
+    required: false
+    default: 'false'
   build_timestamp:
     description: 'Custom kernel build timestamp shown in uname -a (e.g. "Tue Feb 10 10:01:02 UTC 2026"). Leave empty to use the current build time.'
     required: false
@@ -1130,6 +1134,8 @@ runs:
     - name: Apply SUSFS Patches
       shell: bash
       if: ${{ env.OP_SUSFS == 'true' }}
+      env:
+        EXPERIMENTAL_SUSFS_240: ${{ inputs.experimental_susfs_240 }}
       run: |
         set -euo pipefail
         echo "::group::Apply SUSFS patches"
@@ -1178,6 +1184,17 @@ runs:
             else
               echo "ℹ️ Skipping KernelSU folder patch for ReSukiSU"
             fi
+            ;;
+          "v2.4.0")
+            if [ "$EXPERIMENTAL_SUSFS_240" != "true" ] ||
+               [ "${{ inputs.ksu_type }}" != "ReSukiSU" ] ||
+               [ "${{ env.ANDROID_VER }}" != "android15" ] ||
+               [ "${{ env.KERNEL_VER }}" != "6.6" ] ||
+               [ "${{ inputs.upload_final_zip }}" != "false" ]; then
+              echo "::error::SUSFS v2.4.0 requires an opt-in Android 15 / 6.6 ReSukiSU diagnostic build without final ZIP upload"
+              exit 1
+            fi
+            echo "::warning::SUSFS v2.4.0 compatibility is unvalidated; diagnostic build only"
             ;;
           *)
             echo "::error::Unsupported SUSFS version: $susfs_version"
