@@ -7,6 +7,9 @@ import re
 import subprocess
 import textwrap
 
+for path in Path('.github/workflows').glob('*.yml'):
+    assert 'liblz4-tool' not in path.read_text(), f'{path}: use the lz4 package'
+
 workflow = Path('.github/workflows/build-op13-experimental-susfs240-dev.yml').read_text()
 for required in (
     'workflow_dispatch:', 'refs/heads/dev', 'ksu_branch_or_hash: ${{ steps.pins.outputs.dev_sha }}',
