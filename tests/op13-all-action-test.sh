@@ -585,7 +585,7 @@ bbg_step = re.search(
     r"(?ms)^    - name:\s*Add BBG\s*$\n(?P<body>.*?)(?=^    - name:|\Z)",
     action_text,
 )
-if not bbg_step or "if ! wget -O-" not in bbg_step.group("body") or "::error::BBG was requested" not in bbg_step.group("body"):
+if not bbg_step or '[ "$downloaded" != true ] || ! bash "$setup_script" main' not in bbg_step.group("body") or "::error::BBG was requested" not in bbg_step.group("body"):
     raise SystemExit("BBG setup failure must fail closed instead of leaving a false-positive flag")
 
 droidspaces_step = re.search(

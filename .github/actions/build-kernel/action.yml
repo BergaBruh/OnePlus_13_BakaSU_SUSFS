@@ -1434,10 +1434,23 @@ runs:
         echo "::group::Add BBG LSM"
         cd "$KERNEL_PLATFORM_FOLDER"
         echo "Adding BBG..."
-        if ! wget -O- https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash -s main; then
-          echo "::error::BBG was requested, but its setup script failed"
+        setup_script="$(mktemp)"
+        trap 'rm -f "$setup_script"' EXIT
+        downloaded=false
+        for url in \
+          https://raw.githubusercontent.com/vc-teahouse/Baseband-guard/main/setup.sh \
+          https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh; do
+          if curl --fail --location --retry 2 --connect-timeout 10 --max-time 30 --output "$setup_script" "$url" && [ -s "$setup_script" ]; then
+            downloaded=true
+            break
+          fi
+        done
+        if [ "$downloaded" != true ] || ! bash "$setup_script" main; then
+          echo "::error::BBG was requested, but its setup script could not be downloaded or failed"
           exit 1
         fi
+        rm -f "$setup_script"
+        trap - EXIT
         echo "CONFIG_BBG=y" >> common/arch/arm64/configs/gki_defconfig
         sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/selinux/selinux,baseband_guard/ } }' common/security/Kconfig
         
